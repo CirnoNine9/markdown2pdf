@@ -118,9 +118,10 @@ function dollarInlineRule(state: StateInline, silent: boolean): boolean {
 
     const rawBody = state.src.slice(start + 1, close);
     const body = rawBody.trim();
+    const hasTexSignal = containsTexSignal(body);
     if (
-      rawBody !== body ||
-      (!isNumericMathBody(body) && !containsTexSignal(body)) ||
+      (rawBody !== body && !hasTexSignal) ||
+      (!isNumericMathBody(body) && !hasTexSignal) ||
       !canCloseDollar(state.src, close, body)
     ) {
       return false;
