@@ -1,0 +1,15 @@
+node_modules/
+dist/
+out/
+*.vsix
+.vscode-test/
+coverage/
+
+# 本地协作说明和打包脚本
+AGENTS.md
+build.bat
+
+# 本地构建、导出与验证产物
+output/
+tmp/
+.codex/

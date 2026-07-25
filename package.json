@@ -1,0 +1,167 @@
+{
+  "name": "markdown2pdf",
+  "displayName": "Markdown To PDF",
+  "description": "Export beautiful Markdown documents to PDF with MathJax formulas and Shiki code highlighting.",
+  "version": "0.1.19",
+  "publisher": "local",
+  "engines": {
+    "vscode": "^1.92.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onLanguage:markdown",
+    "onCommand:markdown2pdf.exportCurrent",
+    "onCommand:markdown2pdf.exportFile",
+    "onCommand:markdown2pdf.chooseOutputPath",
+    "onCommand:markdown2pdf.openPreview",
+    "onCommand:markdown2pdf.focusSidebar",
+    "onView:markdown2pdfActivityView"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "markdown2pdf.exportCurrent",
+        "title": "Markdown To PDF: Export Current Markdown"
+      },
+      {
+        "command": "markdown2pdf.exportFile",
+        "title": "Markdown To PDF: Export Markdown File"
+      },
+      {
+        "command": "markdown2pdf.chooseOutputPath",
+        "title": "Markdown To PDF: Choose Output Path"
+      },
+      {
+        "command": "markdown2pdf.openPreview",
+        "title": "Markdown To PDF: 打开实时预览",
+        "icon": "$(open-preview)"
+      },
+      {
+        "command": "markdown2pdf.focusSidebar",
+        "title": "Markdown To PDF: Focus Sidebar"
+      }
+    ],
+    "views": {
+      "markdown2pdfActivitybar": [
+        {
+          "id": "markdown2pdfActivityView",
+          "name": "Markdown To PDF",
+          "type": "webview",
+          "visibility": "visible",
+          "when": "markdown2pdf.hasFocusedMarkdownSurface"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "markdown2pdfActivitybar",
+          "title": "Markdown To PDF",
+          "icon": "resources/markdown2pdf.svg"
+        }
+      ]
+    },
+    "menus": {
+      "editor/title": [
+        {
+          "command": "markdown2pdf.openPreview",
+          "when": "editorLangId == markdown",
+          "group": "navigation@99"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "markdown2pdf.exportFile",
+          "when": "resourceExtname == .md || resourceExtname == .markdown",
+          "group": "navigation@99"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Markdown To PDF",
+      "properties": {
+        "markdown2pdf.theme": {
+          "type": "string",
+          "enum": [
+            "academic",
+            "beamer"
+          ],
+          "default": "academic",
+          "description": "Built-in PDF theme."
+        },
+        "markdown2pdf.codeTheme": {
+          "type": "string",
+          "default": "github-light",
+          "description": "Shiki code highlighting theme."
+        },
+        "markdown2pdf.pageFormat": {
+          "type": "string",
+          "default": "A4",
+          "description": "PDF page format passed to Chromium, for example A4, Letter, Legal."
+        },
+        "markdown2pdf.margin": {
+          "type": "object",
+          "default": {
+            "top": "18mm",
+            "right": "18mm",
+            "bottom": "18mm",
+            "left": "18mm"
+          },
+          "description": "PDF page margins."
+        },
+        "markdown2pdf.fontFamily": {
+          "type": "string",
+          "default": "Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif",
+          "description": "CSS font-family used for the exported document."
+        },
+        "markdown2pdf.beamerFooterText": {
+          "type": "string",
+          "default": "",
+          "description": "Optional lower-left footer text for the Beamer theme. Use a newline for two footer lines."
+        },
+        "markdown2pdf.customCssFile": {
+          "type": "string",
+          "default": "",
+          "description": "Optional custom CSS file loaded after the built-in theme."
+        },
+        "markdown2pdf.chromePath": {
+          "type": "string",
+          "default": "",
+          "description": "Optional Chrome, Edge, or Chromium executable path used by puppeteer-core."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "esbuild src/extension.ts --bundle --platform=node --format=cjs --external:vscode --outfile=dist/extension.js --sourcemap && node scripts/copy-assets.mjs",
+    "watch": "npm run build -- --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "package": "npm run typecheck && npm run test && npm run build"
+  },
+  "dependencies": {
+    "@puppeteer/browsers": "^2.10.13",
+    "markdown-it": "^14.1.0",
+    "markdown-it-anchor": "^9.2.0",
+    "markdown-it-footnote": "^4.0.0",
+    "markdown-it-task-lists": "^2.1.1",
+    "mathjax-full": "^3.2.2",
+    "pdfjs-dist": "^4.10.38",
+    "puppeteer-core": "^24.31.0",
+    "sanitize-html": "^2.17.0",
+    "shiki": "^3.18.0"
+  },
+  "devDependencies": {
+    "@types/markdown-it": "^14.1.2",
+    "@types/markdown-it-footnote": "^3.0.4",
+    "@types/node": "^24.10.1",
+    "@types/sanitize-html": "^2.16.0",
+    "@types/vscode": "^1.92.0",
+    "esbuild": "^0.27.2",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.15"
+  }
+}
