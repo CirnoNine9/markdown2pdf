@@ -6,15 +6,6 @@ type RenderRule = MarkdownIt.Renderer.RenderRule;
 
 const dollarCode = 0x24;
 const backslashCode = 0x5c;
-const simpleNumberSource = String.raw`\d+(?:[.,]\d+)?`;
-const simpleFactorSource = String.raw`(?:[A-Za-z]\d*|\([^()\s]+\))`;
-const simpleNumericTermSource = `${simpleNumberSource}(?:${simpleFactorSource})*!*`;
-const simpleSymbolicTermSource = `(?:${simpleFactorSource})+!*`;
-const simpleOperandSource = `(?:${simpleNumericTermSource}|${simpleSymbolicTermSource})`;
-const simpleNumericTermPattern = new RegExp(`^${simpleNumericTermSource}$`);
-const simpleNumericExpressionPattern = new RegExp(
-  `^${simpleNumericTermSource}(?:\\s*[+\\-*/=<>]\\s*${simpleOperandSource})+$`
-);
 
 export function mathPlugin(md: MarkdownIt): void {
   md.block.ruler.before('fence', 'markdown2pdf_math_block', mathBlockRule, {
@@ -29,14 +20,6 @@ export function mathPlugin(md: MarkdownIt): void {
 
 export function containsTexSignal(value: string): boolean {
   return /[\\_^&{}]/.test(value);
-}
-
-function isNumericMathBody(value: string): boolean {
-  return /^\d+(?:[.,]\d+)?$/.test(value);
-}
-
-function isSimpleNumericLeadingMathBody(value: string): boolean {
-  return simpleNumericTermPattern.test(value) || simpleNumericExpressionPattern.test(value);
 }
 
 function mathBlockRule(state: StateBlock, startLine: number, endLine: number, silent: boolean): boolean {
@@ -123,30 +106,6 @@ function dollarInlineRule(state: StateInline, silent: boolean): boolean {
     return false;
   }
 
-  if (/\d/.test(state.src[start + 1] ?? '')) {
-    const close = findSingleLineDollarClose(state.src, start + 1);
-    if (close < 0) {
-      return false;
-    }
-
-    const rawBody = state.src.slice(start + 1, close);
-    const body = rawBody.trim();
-    const hasTexSignal = containsTexSignal(body);
-    if (
-      (rawBody !== body && !hasTexSignal) ||
-      (!isNumericMathBody(body) && !isSimpleNumericLeadingMathBody(body) && !hasTexSignal) ||
-      !canCloseDollar(state.src, close, body)
-    ) {
-      return false;
-    }
-
-    if (!silent) {
-      pushInlineToken(state, body, start + 1);
-    }
-    state.pos = close + 1;
-    return true;
-  }
-
   const multiline = findMultilineInlineClose(state.src, start);
   if (multiline) {
     const body = state.src.slice(start + 1, multiline.close).trim();
@@ -171,7 +130,7 @@ function dollarInlineRule(state: StateInline, silent: boolean): boolean {
   }
 
   const body = state.src.slice(start + 1, close).trim();
-  if (!body || !canCloseDollar(state.src, close, body)) {
+  if (!body) {
     return false;
   }
 
@@ -240,24 +199,7 @@ function getLine(state: StateBlock, line: number): string {
 
 function canOpenSingleLineDollar(src: string, pos: number): boolean {
   const next = src[pos + 1];
-  if (!next || next === '$' || /\s|\d/.test(next)) {
-    return false;
-  }
-
-  return true;
-}
-
-function canCloseDollar(src: string, pos: number, body: string): boolean {
-  if (src.charCodeAt(pos - 1) === backslashCode) {
-    return false;
-  }
-
-  if (/\s$/.test(body)) {
-    return false;
-  }
-
-  const next = src[pos + 1];
-  if (next && /\d/.test(next)) {
+  if (!next || next === '$' || /\s/.test(next)) {
     return false;
   }
 

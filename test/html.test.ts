@@ -102,7 +102,7 @@ describe('markdown rendering', () => {
         '',
         'Power $2^{23}$.',
         '',
-        'Price is $5 plus inline $x+1$.',
+        'Price is \\$5 plus inline $x+1$.',
       ].join('\n'),
       config: defaultConfig,
     });
@@ -138,49 +138,42 @@ describe('markdown rendering', () => {
     expect(html.match(/data-math-source="1,2"/g)).toHaveLength(2);
   });
 
-  it('renders complete numeric-leading expressions without consuming currency text', async () => {
+  it('treats paired single dollars as math without guessing the TeX grammar', async () => {
     const html = await renderMarkdownDocument({
       sourcePath: 'E:/docs/sample.md',
       content: [
-        'Price $1 and $1+1$.',
+        'Expressions: $1+1$, $2 x$, $1≤2$, and $arbitrary words$.',
         '',
-        'Expressions: $1 - 1$, $1 / 1$, $1=1$, $1<2$, $2x$, $2(x)$, $1e3$, $1e-3$, and $1!$.',
+        'Ambiguous: $1 and $1+1$.',
         '',
-        'Currency range $5-$10 and inline $1+1$.',
+        'Unescaped range $5-$10.',
         '',
         'Operator boundary $1+$1+1$.',
         '',
+        'Adjacent text $1$2.',
+        '',
         '| Expression |',
         '| --- |',
-        '| $1 and $1+1$ |',
+        '| $1≤2$ |',
       ].join('\n'),
       config: defaultConfig,
     });
     const body = mainContent(html);
 
+    expect(body).toContain('data-math-source="1+1">\\(1+1\\)</span>');
+    expect(body).toContain('data-math-source="2 x">\\(2 x\\)</span>');
+    expect(body.match(/data-math-source="1≤2"/g)).toHaveLength(2);
+    expect(body).toContain('data-math-source="arbitrary words">\\(arbitrary words\\)</span>');
     expect(body).toContain(
-      'Price $1 and <span class="math-inline" data-math-source="1+1">\\(1+1\\)</span>.'
+      'Ambiguous: <span class="math-inline" data-math-source="1 and">\\(1 and\\)</span>1+1$.'
+    );
+    expect(body).toContain('Unescaped range <span class="math-inline" data-math-source="5-">');
+    expect(body).toContain(
+      'Operator boundary <span class="math-inline" data-math-source="1+">\\(1+\\)</span>1+1$.'
     );
     expect(body).toContain(
-      '<td>$1 and <span class="math-inline" data-math-source="1+1">\\(1+1\\)</span></td>'
+      'Adjacent text <span class="math-inline" data-math-source="1">\\(1\\)</span>2.'
     );
-    expect(body).toContain('data-math-source="1 - 1">\\(1 - 1\\)</span>');
-    expect(body).toContain('data-math-source="1 / 1">\\(1 / 1\\)</span>');
-    expect(body).toContain('data-math-source="1=1">\\(1=1\\)</span>');
-    expect(body).toContain('data-math-source="1&lt;2">\\(1&lt;2\\)</span>');
-    expect(body).toContain('data-math-source="2x">\\(2x\\)</span>');
-    expect(body).toContain('data-math-source="2(x)">\\(2(x)\\)</span>');
-    expect(body).toContain('data-math-source="1e3">\\(1e3\\)</span>');
-    expect(body).toContain('data-math-source="1e-3">\\(1e-3\\)</span>');
-    expect(body).toContain('data-math-source="1!">\\(1!\\)</span>');
-    expect(body).toContain(
-      'Currency range $5-$10 and inline <span class="math-inline" data-math-source="1+1">'
-    );
-    expect(body).toContain(
-      'Operator boundary $1+<span class="math-inline" data-math-source="1+1">'
-    );
-    expect(body).not.toContain('data-math-source="1 and"');
-    expect(body).not.toContain('data-math-source="5-"');
   });
 
   it('renders numeric-leading TeX with trailing delimiter whitespace', async () => {
@@ -238,23 +231,27 @@ describe('markdown rendering', () => {
     expect(html).not.toContain('<div class="math-display"');
   });
 
-  it('does not treat dollars in money or escaped text as math delimiters', async () => {
+  it('uses escaped dollars for literal currency alongside math', async () => {
     const html = await renderMarkdownDocument({
       sourcePath: 'E:/docs/sample.md',
       content: [
-        'Price is $5 plus inline $x+1$.',
+        'Price is \\$5 plus inline $x+1$.',
         '',
-        'Escaped opener: \\$x$ then real $y$.',
+        'Escaped amount: \\$1 and $1+1$.',
+        '',
+        'Range: \\$5-\\$10 then real $y$.',
       ].join('\n'),
       config: defaultConfig,
     });
 
     expect(html).toContain('Price is $5 plus inline <span class="math-inline"');
     expect(html).toContain('\\(x+1\\)');
-    expect(html).toContain('Escaped opener: $x$ then real <span class="math-inline"');
+    expect(html).toContain(
+      'Escaped amount: $1 and <span class="math-inline" data-math-source="1+1">\\(1+1\\)</span>.'
+    );
+    expect(html).toContain('Range: $5-$10 then real <span class="math-inline"');
     expect(html).toContain('\\(y\\)');
-    expect(html).not.toContain('\\(5 plus inline\\)');
-    expect(html).not.toContain('\\(x$ then real\\)');
+    expect(html).not.toContain('data-math-source="5-"');
   });
 
   it('does not parse math delimiters inside inline or fenced code', async () => {
