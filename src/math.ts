@@ -6,6 +6,15 @@ type RenderRule = MarkdownIt.Renderer.RenderRule;
 
 const dollarCode = 0x24;
 const backslashCode = 0x5c;
+const simpleNumberSource = String.raw`\d+(?:[.,]\d+)?`;
+const simpleFactorSource = String.raw`(?:[A-Za-z]\d*|\([^()\s]+\))`;
+const simpleNumericTermSource = `${simpleNumberSource}(?:${simpleFactorSource})*!*`;
+const simpleSymbolicTermSource = `(?:${simpleFactorSource})+!*`;
+const simpleOperandSource = `(?:${simpleNumericTermSource}|${simpleSymbolicTermSource})`;
+const simpleNumericTermPattern = new RegExp(`^${simpleNumericTermSource}$`);
+const simpleNumericExpressionPattern = new RegExp(
+  `^${simpleNumericTermSource}(?:\\s*[+\\-*/=<>]\\s*${simpleOperandSource})+$`
+);
 
 export function mathPlugin(md: MarkdownIt): void {
   md.block.ruler.before('fence', 'markdown2pdf_math_block', mathBlockRule, {
@@ -24,6 +33,10 @@ export function containsTexSignal(value: string): boolean {
 
 function isNumericMathBody(value: string): boolean {
   return /^\d+(?:[.,]\d+)?$/.test(value);
+}
+
+function isSimpleNumericLeadingMathBody(value: string): boolean {
+  return simpleNumericTermPattern.test(value) || simpleNumericExpressionPattern.test(value);
 }
 
 function mathBlockRule(state: StateBlock, startLine: number, endLine: number, silent: boolean): boolean {
@@ -121,7 +134,7 @@ function dollarInlineRule(state: StateInline, silent: boolean): boolean {
     const hasTexSignal = containsTexSignal(body);
     if (
       (rawBody !== body && !hasTexSignal) ||
-      (!isNumericMathBody(body) && !hasTexSignal) ||
+      (!isNumericMathBody(body) && !isSimpleNumericLeadingMathBody(body) && !hasTexSignal) ||
       !canCloseDollar(state.src, close, body)
     ) {
       return false;

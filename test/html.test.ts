@@ -138,6 +138,51 @@ describe('markdown rendering', () => {
     expect(html.match(/data-math-source="1,2"/g)).toHaveLength(2);
   });
 
+  it('renders complete numeric-leading expressions without consuming currency text', async () => {
+    const html = await renderMarkdownDocument({
+      sourcePath: 'E:/docs/sample.md',
+      content: [
+        'Price $1 and $1+1$.',
+        '',
+        'Expressions: $1 - 1$, $1 / 1$, $1=1$, $1<2$, $2x$, $2(x)$, $1e3$, $1e-3$, and $1!$.',
+        '',
+        'Currency range $5-$10 and inline $1+1$.',
+        '',
+        'Operator boundary $1+$1+1$.',
+        '',
+        '| Expression |',
+        '| --- |',
+        '| $1 and $1+1$ |',
+      ].join('\n'),
+      config: defaultConfig,
+    });
+    const body = mainContent(html);
+
+    expect(body).toContain(
+      'Price $1 and <span class="math-inline" data-math-source="1+1">\\(1+1\\)</span>.'
+    );
+    expect(body).toContain(
+      '<td>$1 and <span class="math-inline" data-math-source="1+1">\\(1+1\\)</span></td>'
+    );
+    expect(body).toContain('data-math-source="1 - 1">\\(1 - 1\\)</span>');
+    expect(body).toContain('data-math-source="1 / 1">\\(1 / 1\\)</span>');
+    expect(body).toContain('data-math-source="1=1">\\(1=1\\)</span>');
+    expect(body).toContain('data-math-source="1&lt;2">\\(1&lt;2\\)</span>');
+    expect(body).toContain('data-math-source="2x">\\(2x\\)</span>');
+    expect(body).toContain('data-math-source="2(x)">\\(2(x)\\)</span>');
+    expect(body).toContain('data-math-source="1e3">\\(1e3\\)</span>');
+    expect(body).toContain('data-math-source="1e-3">\\(1e-3\\)</span>');
+    expect(body).toContain('data-math-source="1!">\\(1!\\)</span>');
+    expect(body).toContain(
+      'Currency range $5-$10 and inline <span class="math-inline" data-math-source="1+1">'
+    );
+    expect(body).toContain(
+      'Operator boundary $1+<span class="math-inline" data-math-source="1+1">'
+    );
+    expect(body).not.toContain('data-math-source="1 and"');
+    expect(body).not.toContain('data-math-source="5-"');
+  });
+
   it('renders numeric-leading TeX with trailing delimiter whitespace', async () => {
     const formula = "$1-x\\Phi'(T(x))=1-\\dfrac{T(x)\\Phi'(T(x))}{\\Phi(T(x))} $";
     const html = await renderMarkdownDocument({
