@@ -23,7 +23,7 @@ export function containsTexSignal(value: string): boolean {
 }
 
 function isNumericMathBody(value: string): boolean {
-  return /^\d+(?:\.\d+)?$/.test(value);
+  return /^\d+(?:[.,]\d+)?$/.test(value);
 }
 
 function mathBlockRule(state: StateBlock, startLine: number, endLine: number, silent: boolean): boolean {

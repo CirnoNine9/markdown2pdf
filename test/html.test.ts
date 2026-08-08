@@ -115,6 +115,29 @@ describe('markdown rendering', () => {
     expect(html).not.toContain('\\(5 plus inline\\)');
   });
 
+  it('renders comma-separated numeric math in paragraphs and table cells', async () => {
+    const html = await renderMarkdownDocument({
+      sourcePath: 'E:/docs/sample.md',
+      content: [
+        'Paragraph $1,2$.',
+        '',
+        '| Value |',
+        '| --- |',
+        '| $1,2$ |',
+      ].join('\n'),
+      config: defaultConfig,
+    });
+    const body = mainContent(html);
+
+    expect(body).toContain(
+      '<p>Paragraph <span class="math-inline" data-math-source="1,2">\\(1,2\\)</span>.</p>'
+    );
+    expect(body).toContain(
+      '<td><span class="math-inline" data-math-source="1,2">\\(1,2\\)</span></td>'
+    );
+    expect(html.match(/data-math-source="1,2"/g)).toHaveLength(2);
+  });
+
   it('renders numeric-leading TeX with trailing delimiter whitespace', async () => {
     const formula = "$1-x\\Phi'(T(x))=1-\\dfrac{T(x)\\Phi'(T(x))}{\\Phi(T(x))} $";
     const html = await renderMarkdownDocument({
