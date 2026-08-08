@@ -1,4 +1,5 @@
 import { promises as fs } from 'node:fs';
+import { createRequire } from 'node:module';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import MarkdownIt = require('markdown-it');
@@ -15,6 +16,8 @@ import {
 import type { ExportConfig } from './config';
 import { mathPlugin } from './math';
 import { buildCss } from './theme';
+
+const moduleRequire = createRequire(__filename);
 
 export interface RenderOptions {
   sourcePath: string;
@@ -595,10 +598,12 @@ export function sanitizeRenderedHtml(html: string, resolveImageSource?: (source:
 async function loadMathJaxScript(): Promise<string> {
   const candidates = [
     path.join(__dirname, 'assets', 'mathjax', 'tex-svg-full.js'),
+    resolveMathJaxDependency('mathjax-full/es5/tex-svg-full.js'),
     path.join(process.cwd(), 'node_modules', 'mathjax-full', 'es5', 'tex-svg-full.js'),
     path.join(__dirname, 'assets', 'mathjax', 'tex-svg.js'),
+    resolveMathJaxDependency('mathjax-full/es5/tex-svg.js'),
     path.join(process.cwd(), 'node_modules', 'mathjax-full', 'es5', 'tex-svg.js'),
-  ];
+  ].filter((candidate): candidate is string => candidate !== undefined);
 
   for (const candidate of candidates) {
     try {
@@ -609,6 +614,14 @@ async function loadMathJaxScript(): Promise<string> {
   }
 
   throw new Error('Unable to locate local MathJax asset. Run npm install and npm run build.');
+}
+
+function resolveMathJaxDependency(request: string): string | undefined {
+  try {
+    return moduleRequire.resolve(request);
+  } catch {
+    return undefined;
+  }
 }
 
 function buildHtmlShell(input: {

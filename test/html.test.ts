@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import puppeteer from 'puppeteer-core';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { defaultConfig } from '../src/config';
 import { normalizeImageSource, renderMarkdownDocument, wrapBeamerFrames } from '../src/html';
 
@@ -90,6 +90,25 @@ describe('markdown rendering', () => {
     expect(html).toContain('\\[\\int_0^1 x dx\\]');
     expect(html).toContain('\\[\\begin{bmatrix}1 &amp; 2\\\\3 &amp; 4\\end{bmatrix}\\]');
     expect(html).toContain('\\[\\mathclap{x+y}\\]');
+  });
+
+  it('loads MathJax independently of the consumer working directory', async () => {
+    const driveRoot = path.parse(process.cwd()).root;
+    const cwd = vi
+      .spyOn(process, 'cwd')
+      .mockReturnValue(path.join(driveRoot, 'external-consumer'));
+
+    try {
+      const html = await renderMarkdownDocument({
+        sourcePath: 'E:/docs/sample.md',
+        content: '$$x^2$$',
+        config: defaultConfig,
+      });
+
+      expect(html).toContain('<div class="math-display"');
+    } finally {
+      cwd.mockRestore();
+    }
   });
 
   it('renders standalone numeric single-dollar math', async () => {
