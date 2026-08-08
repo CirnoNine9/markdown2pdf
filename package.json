@@ -4,6 +4,10 @@
   "description": "Export beautiful Markdown documents to PDF with MathJax formulas and Shiki code highlighting.",
   "version": "0.1.21",
   "publisher": "local",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/CirnoNine9/markdown2pdf.git"
+  },
   "engines": {
     "vscode": "^1.92.0"
   },
