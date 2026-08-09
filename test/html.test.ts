@@ -92,6 +92,28 @@ describe('markdown rendering', () => {
     expect(html).toContain('\\[\\mathclap{x+y}\\]');
   });
 
+  it('renders display math whose delimiters share lines with multiline content', async () => {
+    const html = await renderMarkdownDocument({
+      sourcePath: 'E:/docs/sample.md',
+      content: [
+        '对非零实数 \\(x_1,\\dots,x_r\\)，若 \\(\\sum_{i=1}^r x_i\\ne0\\)，则',
+        '$$(x_1+\\cdots+x_r)^n=',
+        '\\sum_{k_1+\\cdots+k_r=n}\\binom n{k_1,\\dots,k_r}x_1^{k_1}\\cdots x_r^{k_r}.$$',
+      ].join('\n'),
+      config: defaultConfig,
+    });
+    const body = mainContent(html);
+
+    expect(body.match(/class="math-inline"/g)).toHaveLength(2);
+    expect(body).toContain('data-math-source="(x_1+\\cdots+x_r)^n=');
+    expect(body).toContain('<div class="math-display"');
+    expect(body).toContain(
+      '\\[(x_1+\\cdots+x_r)^n=\n' +
+        '\\sum_{k_1+\\cdots+k_r=n}\\binom n{k_1,\\dots,k_r}x_1^{k_1}\\cdots x_r^{k_r}.\\]'
+    );
+    expect(body).not.toContain('<p>$$');
+  });
+
   it('loads MathJax independently of the consumer working directory', async () => {
     const driveRoot = path.parse(process.cwd()).root;
     const cwd = vi

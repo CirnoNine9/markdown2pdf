@@ -48,15 +48,24 @@ function mathBlockRule(state: StateBlock, startLine: number, endLine: number, si
     return true;
   }
 
-  if (trimmed !== open) {
-    return false;
+  const bodyLines: string[] = [];
+  const openingBody = trimmed.slice(open.length);
+  if (openingBody) {
+    bodyLines.push(openingBody);
   }
 
   let nextLine = startLine + 1;
   while (nextLine < endLine) {
-    if (getLine(state, nextLine).trim() === close) {
+    const currentLine = getLine(state, nextLine);
+    const trimmedLine = currentLine.trim();
+    if (trimmedLine.endsWith(close)) {
+      const closingBody = trimmedLine.slice(0, -close.length).trimEnd();
+      if (closingBody) {
+        bodyLines.push(closingBody);
+      }
       break;
     }
+    bodyLines.push(currentLine);
     nextLine += 1;
   }
 
@@ -64,8 +73,12 @@ function mathBlockRule(state: StateBlock, startLine: number, endLine: number, si
     return false;
   }
 
+  const body = bodyLines.join('\n').trim();
+  if (!body) {
+    return false;
+  }
+
   if (!silent) {
-    const body = state.getLines(startLine + 1, nextLine, state.blkIndent, false).trim();
     pushMathDisplay(state, body, startLine + 1);
   }
   state.line = nextLine + 1;
