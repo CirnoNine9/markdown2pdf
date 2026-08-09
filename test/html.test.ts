@@ -114,6 +114,32 @@ describe('markdown rendering', () => {
     expect(body).not.toContain('<p>$$');
   });
 
+  it('preserves aligned display math with ampersands and TeX line breaks', async () => {
+    const formula = [
+      '$$\\begin{aligned}',
+      '\\frac{x}{(1-x)(1-2x)}',
+      ' &=x\\left\\{\\frac2{1-2x}-\\frac1{1-x}\\right\\}\\\\',
+      ' &=\\{2x+2^2x^2+2^3x^3+2^4x^4+\\cdots\\}\\\\',
+      ' &\\quad-\\{x+x^2+x^3+x^4+\\cdots\\}\\\\',
+      ' &=(2-1)x+(2^2-1)x^2+(2^3-1)x^3+(2^4-1)x^4+\\cdots.',
+      '\\end{aligned}$$',
+    ].join('\n');
+    const html = await renderMarkdownDocument({
+      sourcePath: 'E:/docs/sample.md',
+      content: formula,
+      config: defaultConfig,
+    });
+    const body = mainContent(html);
+
+    expect(body).toContain('<div class="math-display"');
+    expect(body).toContain('\\[\\begin{aligned}\n');
+    expect(body).toContain('&amp;=x\\left\\{');
+    expect(body).toContain('\\right\\}\\\\\n');
+    expect(body).toContain('&amp;\\quad-\\{');
+    expect(body).toContain('\\end{aligned}\\]');
+    expect(body).not.toContain('<p>$$');
+  });
+
   it('loads MathJax independently of the consumer working directory', async () => {
     const driveRoot = path.parse(process.cwd()).root;
     const cwd = vi
