@@ -2,7 +2,7 @@
   "name": "markdown2pdf",
   "displayName": "Markdown To PDF",
   "description": "Export beautiful Markdown documents to PDF with MathJax formulas and Shiki code highlighting.",
-  "version": "0.1.21",
+  "version": "0.1.22",
   "publisher": "local",
   "repository": {
     "type": "git",
