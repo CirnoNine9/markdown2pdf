@@ -7,6 +7,11 @@ type RenderRule = MarkdownIt.Renderer.RenderRule;
 const dollarCode = 0x24;
 const backslashCode = 0x5c;
 
+interface ProtectedMathPipes {
+  content: string;
+  placeholder: string;
+}
+
 export function mathPlugin(md: MarkdownIt): void {
   md.block.ruler.before('fence', 'markdown2pdf_math_block', mathBlockRule, {
     alt: ['paragraph', 'reference', 'blockquote', 'list'],
@@ -20,6 +25,41 @@ export function mathPlugin(md: MarkdownIt): void {
 
 export function containsTexSignal(value: string): boolean {
   return /[\\_^&{}]/.test(value);
+}
+
+/**
+ * Markdown-it parses table cells before it parses inline math. Protect pipes in
+ * recognized tables so TeX absolute-value delimiters are not treated as cells.
+ */
+export function protectMathPipesInTables(markdown: string): ProtectedMathPipes {
+  const placeholder = findUnusedPrivateUseCharacter(markdown);
+  const lines = markdown.split('\n');
+  let inFence = false;
+
+  for (let index = 0; index < lines.length; index += 1) {
+    if (isFenceLine(lines[index])) {
+      inFence = !inFence;
+      continue;
+    }
+
+    if (inFence || !isTableDelimiterLine(lines[index + 1] ?? '')) {
+      continue;
+    }
+
+    lines[index] = protectInlineMathPipes(lines[index], placeholder);
+    index += 1;
+
+    while (index + 1 < lines.length && isTableRowLine(lines[index + 1])) {
+      index += 1;
+      lines[index] = protectInlineMathPipes(lines[index], placeholder);
+    }
+  }
+
+  return { content: lines.join('\n'), placeholder };
+}
+
+export function restoreMathPipes(value: string, placeholder: string): string {
+  return value.replaceAll(placeholder, '|');
 }
 
 function mathBlockRule(state: StateBlock, startLine: number, endLine: number, silent: boolean): boolean {
@@ -267,6 +307,91 @@ function findEscapedClose(src: string, from: number, marker: ')' | ']'): number 
   }
 
   return -1;
+}
+
+function protectInlineMathPipes(line: string, placeholder: string): string {
+  let result = '';
+  let position = 0;
+
+  while (position < line.length) {
+    if (line[position] === '`') {
+      const marker = line.slice(position).match(/^`+/)?.[0] ?? '`';
+      const close = line.indexOf(marker, position + marker.length);
+      if (close >= 0) {
+        result += line.slice(position, close + marker.length);
+        position = close + marker.length;
+        continue;
+      }
+    }
+
+    const parenMath = line[position] === '\\' && line[position + 1] === '(';
+    const bracketMath = line[position] === '\\' && line[position + 1] === '[';
+    if (parenMath || bracketMath) {
+      const marker = parenMath ? ')' : ']';
+      const close = findEscapedClose(line, position + 2, marker);
+      if (close >= 0) {
+        result += line.slice(position, position + 2);
+        result += line.slice(position + 2, close).replaceAll('|', placeholder);
+        result += line.slice(close, close + 2);
+        position = close + 2;
+        continue;
+      }
+    }
+
+    if (
+      line.charCodeAt(position) === dollarCode &&
+      (position === 0 || line.charCodeAt(position - 1) !== backslashCode) &&
+      line[position + 1] !== '$' &&
+      canOpenSingleLineDollar(line, position)
+    ) {
+      const close = findSingleLineDollarClose(line, position + 1);
+      if (close >= 0) {
+        result += line[position];
+        result += line.slice(position + 1, close).replaceAll('|', placeholder);
+        result += line[close];
+        position = close + 1;
+        continue;
+      }
+    }
+
+    result += line[position];
+    position += 1;
+  }
+
+  return result;
+}
+
+function isTableDelimiterLine(line: string): boolean {
+  const normalized = stripBlockQuotePrefix(line).trim();
+  return /^\|?\s*:?-+:?\s*(?:\|\s*:?-+:?\s*)+\|?$/.test(normalized);
+}
+
+function isTableRowLine(line: string): boolean {
+  const normalized = stripBlockQuotePrefix(line);
+  return normalized.trim().length > 0 && normalized.includes('|');
+}
+
+function stripBlockQuotePrefix(line: string): string {
+  let result = line;
+  while (/^\s{0,3}>\s?/.test(result)) {
+    result = result.replace(/^\s{0,3}>\s?/, '');
+  }
+  return result;
+}
+
+function isFenceLine(line: string): boolean {
+  return /^\s{0,3}(?:`{3,}|~{3,})/.test(line);
+}
+
+function findUnusedPrivateUseCharacter(value: string): string {
+  for (let codePoint = 0xe000; codePoint <= 0xf8ff; codePoint += 1) {
+    const candidate = String.fromCharCode(codePoint);
+    if (!value.includes(candidate)) {
+      return candidate;
+    }
+  }
+
+  throw new Error('Unable to reserve a temporary character for table math parsing.');
 }
 
 function escapeHtmlText(value: string): string {

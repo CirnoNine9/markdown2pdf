@@ -205,6 +205,30 @@ describe('markdown rendering', () => {
     expect(html.match(/data-math-source="1,2"/g)).toHaveLength(2);
   });
 
+  it('keeps absolute-value pipes inside inline math from splitting table cells', async () => {
+    const html = await renderMarkdownDocument({
+      sourcePath: 'E:/docs/matching.md',
+      content: [
+        '| 操作/结构 | 含义 | 复杂度 | 备注 |',
+        '|---|---|---:|---|',
+        '| 增广路 | 相对于当前匹配，首尾为未匹配点、边交替属于匹配与非匹配的路径 | - | 沿路径取对称差，匹配大小增加 $1$ |',
+        "| $M\\mathbin{\\triangle}M'$ | 两个匹配的对称差 | - | 每个连通分量是交替环或交替路，用于交换与证明 |",
+        '| $\\nu(G)$ | 最大匹配的边数 | - | 一般图与二分图都适用 |',
+        '| $\\rho(G)$ | 覆盖所有非孤立点的最少边数 | - | 只有在无孤立点时才有 $\\rho(G)=|V|-\\nu(G)$ |',
+        '| $\\tau(G)$、$\\alpha(G)$ | 最小点覆盖大小、最大独立集大小 | - | 任意图均有 $\\tau(G)+\\alpha(G)=|V|$；二分图另有 $\\tau(G)=\\nu(G)$ |',
+      ].join('\n'),
+      config: defaultConfig,
+    });
+    const body = mainContent(html);
+
+    expect(body.match(/<th\b/g)).toHaveLength(4);
+    expect(body.match(/<tbody>[\s\S]*?<\/tbody>/)?.[0].match(/<tr>/g)).toHaveLength(5);
+    expect(body.match(/<td\b/g)).toHaveLength(20);
+    expect(body).toContain('data-math-source="\\rho(G)=|V|-\\nu(G)"');
+    expect(body).toContain('data-math-source="\\tau(G)+\\alpha(G)=|V|"');
+    expect(body).not.toContain('&#xE000;');
+  });
+
   it('treats paired single dollars as math without guessing the TeX grammar', async () => {
     const html = await renderMarkdownDocument({
       sourcePath: 'E:/docs/sample.md',

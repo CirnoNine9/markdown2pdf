@@ -14,7 +14,7 @@ import {
   paginateBeamerFramesInBrowser,
 } from './beamerPagination';
 import type { ExportConfig } from './config';
-import { mathPlugin } from './math';
+import { mathPlugin, protectMathPipesInTables, restoreMathPipes } from './math';
 import { buildCss } from './theme';
 
 const moduleRequire = createRequire(__filename);
@@ -50,7 +50,11 @@ export async function renderMarkdownDocument(options: RenderOptions): Promise<st
   const md = createMarkdownIt(options.sourcePath, options.config, options.resolveImageSource);
   const allHeadings = extractTocHeadings(md, options.content);
   const tocHeadings = options.includeToc ? allHeadings : [];
-  const body = md.render(options.content);
+  const protectedMathPipes = protectMathPipesInTables(options.content);
+  const body = restoreMathPipes(
+    md.render(protectedMathPipes.content),
+    protectedMathPipes.placeholder
+  );
   const highlighted = await resolveShikiPlaceholders(body);
   const beamerFrames = options.config.theme === 'beamer' ? buildBeamerFrames(highlighted) : [];
   const themedBody = options.config.theme === 'beamer' ? renderBeamerFrames(highlighted, beamerFrames) : highlighted;
