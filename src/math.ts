@@ -195,13 +195,25 @@ function dollarInlineRule(state: StateInline, silent: boolean): boolean {
 }
 
 function renderInlineMath(tokens: MarkdownIt.Token[], index: number): string {
-  return `<span class="math-inline" data-math-source="${escapeHtmlAttribute(tokens[index].content)}">\\(${escapeHtmlText(tokens[index].content)}\\)</span>`;
+  const source = tokens[index].content;
+  const renderedSource = normalizeMathSource(source);
+  return `<span class="math-inline" data-math-source="${escapeHtmlAttribute(source)}">\\(${escapeHtmlText(renderedSource)}\\)</span>`;
 }
 
 function renderDisplayMath(tokens: MarkdownIt.Token[], index: number): string {
   const token = tokens[index];
+  const renderedSource = normalizeMathSource(token.content);
   const sourceLine = token.meta?.sourceLine ? ` data-source-line="${escapeHtmlAttribute(String(token.meta.sourceLine))}"` : '';
-  return `<div class="math-display"${sourceLine} data-math-source="${escapeHtmlAttribute(token.content)}">\\[${escapeHtmlText(token.content)}\\]</div>\n`;
+  return `<div class="math-display"${sourceLine} data-math-source="${escapeHtmlAttribute(token.content)}">\\[${escapeHtmlText(renderedSource)}\\]</div>\n`;
+}
+
+/**
+ * A bare percent sign is a TeX comment marker. Treat it as a literal percent
+ * when it is used as the operand of the common binary-operator form
+ * `\\mathbin{%}`.
+ */
+function normalizeMathSource(value: string): string {
+  return value.replace(/(\\mathbin\s*\{\s*)%(?=\s*\})/g, (_, prefix: string) => `${prefix}\\%`);
 }
 
 function pushMathDisplay(state: StateBlock, body: string, sourceLine: number): void {

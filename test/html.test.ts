@@ -205,6 +205,19 @@ describe('markdown rendering', () => {
     expect(html.match(/data-math-source="1,2"/g)).toHaveLength(2);
   });
 
+  it('renders a literal percent binary operator in table math', async () => {
+    const html = await renderMarkdownDocument({
+      sourcePath: 'E:/docs/modulo.md',
+      content: ['| Operation |', '| --- |', '| $m\\mathbin{%}a$ |'].join('\n'),
+      config: defaultConfig,
+    });
+    const body = mainContent(html);
+
+    expect(body).toContain(
+      '<td><span class="math-inline" data-math-source="m\\mathbin{%}a">\\(m\\mathbin{\\%}a\\)</span></td>'
+    );
+  });
+
   it('keeps absolute-value pipes inside inline math from splitting table cells', async () => {
     const html = await renderMarkdownDocument({
       sourcePath: 'E:/docs/matching.md',
