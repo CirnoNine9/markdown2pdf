@@ -1,4 +1,5 @@
-import { promises as fs } from 'node:fs';
+import { existsSync, promises as fs } from 'node:fs';
+import { createRequire } from 'node:module';
 import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -177,6 +178,11 @@ async function readPdfDestinationPages(
   anchors: string[]
 ): Promise<Record<string, number>> {
   const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
+  const bundledWorkerPath = path.join(__dirname, 'assets', 'pdfjs', 'pdf.worker.mjs');
+  const workerPath = existsSync(bundledWorkerPath)
+    ? bundledWorkerPath
+    : createRequire(__filename).resolve('pdfjs-dist/legacy/build/pdf.worker.mjs');
+  pdfjs.GlobalWorkerOptions.workerSrc = pathToFileURL(workerPath).href;
   const document = await pdfjs.getDocument({
     data: pdfData,
   }).promise;

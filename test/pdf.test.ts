@@ -1,4 +1,4 @@
-import { mkdtemp, rm, stat, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -63,6 +63,8 @@ describe('pdf export', () => {
     const outputPath = path.join(tempDir, 'sample.pdf');
 
     try {
+      const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
+      pdfjs.GlobalWorkerOptions.workerSrc = '';
       await writeFile(
         path.join(tempDir, 'local-image.svg'),
         '<svg xmlns="http://www.w3.org/2000/svg" width="80" height="40"><rect width="80" height="40" fill="#205493"/></svg>',
@@ -103,6 +105,63 @@ describe('pdf export', () => {
 
       const output = await stat(outputPath);
       expect(output.size).toBeGreaterThan(1000);
+      expect(pdfjs.GlobalWorkerOptions.workerSrc).toMatch(/^file:/);
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it.skipIf(!process.env.M2PDF_E2E_BROWSER)('starts each academic h1 on a fresh page without moving a short code heading', async () => {
+    const tempDir = await mkdtemp(path.join(os.tmpdir(), 'markdown2pdf-'));
+    const outputPath = path.join(tempDir, 'chapters.pdf');
+
+    try {
+      await exportMarkdownToPdf({
+        sourcePath: path.join(tempDir, 'chapters.md'),
+        markdown: [
+          '# First chapter',
+          '',
+          'Introduction.',
+          '',
+          '## Code',
+          '',
+          '```text',
+          'first line',
+          'second line',
+          '```',
+          '',
+          '# Second chapter',
+          '',
+          'Conclusion.',
+        ].join('\n'),
+        outputPath,
+        executablePath: process.env.M2PDF_E2E_BROWSER!,
+        config: defaultConfig,
+        includeToc: true,
+        includePageNumbers: true,
+      });
+
+      const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
+      const pdf = await pdfjs.getDocument({ data: new Uint8Array(await readFile(outputPath)) }).promise;
+      try {
+        expect(pdf.numPages).toBe(3);
+        const pages = await Promise.all(
+          [1, 2, 3].map(async (pageNumber) => {
+            const page = await pdf.getPage(pageNumber);
+            const content = await page.getTextContent();
+            return content.items.map((item) => ('str' in item ? item.str : '')).join(' ');
+          })
+        );
+        expect(pages[0]).toContain('First chapter');
+        expect(pages[0]).toContain('Second chapter');
+        expect(pages[1]).toContain('First chapter');
+        expect(pages[1]).toContain('Code');
+        expect(pages[1]).toContain('Introduction');
+        expect(pages[2]).toContain('Second chapter');
+        expect(pages[2]).toContain('Conclusion');
+      } finally {
+        await pdf.destroy();
+      }
     } finally {
       await rm(tempDir, { recursive: true, force: true });
     }

@@ -246,6 +246,21 @@ body {
   max-width: 760px;
 }
 
+.markdown2pdf-theme-academic > h1:not(:first-child) {
+  break-before: page;
+  page-break-before: always;
+}
+
+.markdown2pdf-theme-academic > .markdown2pdf-toc + h1 {
+  break-before: auto;
+  page-break-before: auto;
+}
+
+.markdown2pdf-theme-academic pre {
+  break-inside: auto;
+  page-break-inside: auto;
+}
+
 h1 {
   text-align: center;
 }
