@@ -167,6 +167,47 @@ describe('pdf export', () => {
     }
   });
 
+  it.skipIf(!process.env.M2PDF_E2E_BROWSER)('fits 51 academic toc entries on one A4 page with page numbers', async () => {
+    const tempDir = await mkdtemp(path.join(os.tmpdir(), 'markdown2pdf-'));
+    const outputPath = path.join(tempDir, 'compact-toc.pdf');
+    const chapters = Array.from({ length: 10 }, (_, index) => [
+      `# Chapter ${index + 1}: Method and implementation`,
+      '## Observation one',
+      '## Observation two',
+      '## Approach',
+      '## Code',
+      ...(index === 0 ? ['## Complexity analysis'] : []),
+    ].join('\n\n'));
+    try {
+      await exportMarkdownToPdf({
+        sourcePath: path.join(tempDir, 'compact-toc.md'),
+        markdown: chapters.join('\n\n'),
+        outputPath,
+        executablePath: process.env.M2PDF_E2E_BROWSER!,
+        config: defaultConfig,
+        includeToc: true,
+        includePageNumbers: true,
+      });
+      const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
+      const pdf = await pdfjs.getDocument({ data: new Uint8Array(await readFile(outputPath)) }).promise;
+      try {
+        expect(pdf.numPages).toBe(11);
+        const toc = await pdf.getPage(1);
+        const links = (await toc.getAnnotations()).filter(annotation => annotation.subtype === 'Link');
+        expect(links).toHaveLength(51);
+        const tocText = (await toc.getTextContent()).items.map(item => 'str' in item ? item.str : '').join(' ');
+        expect(tocText).toContain('Chapter 10: Method and implementation');
+        const firstChapter = await pdf.getPage(2);
+        const chapterText = (await firstChapter.getTextContent()).items.map(item => 'str' in item ? item.str : '').join(' ');
+        expect(chapterText).toContain('Chapter 1: Method and implementation');
+      } finally {
+        await pdf.destroy();
+      }
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
+  });
+
   it.skipIf(!process.env.M2PDF_E2E_BROWSER)('fails clearly when a local image cannot load', async () => {
     const tempDir = await mkdtemp(path.join(os.tmpdir(), 'markdown2pdf-'));
 

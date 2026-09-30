@@ -288,15 +288,32 @@ body {
 }
 
 .markdown2pdf-theme-academic .markdown2pdf-toc {
-  padding-top: 0.8rem;
+  padding-top: 0.35rem;
+  font-size: 9.5pt;
+}
+
+.markdown2pdf-theme-academic .markdown2pdf-toc-item {
+  line-height: 1.25;
+}
+
+.markdown2pdf-theme-academic .markdown2pdf-toc-item > a {
+  padding: 0.02rem 0;
+}
+
+.markdown2pdf-theme-academic .markdown2pdf-toc-depth-0 {
+  margin-top: 0.3rem;
+}
+
+.markdown2pdf-theme-academic .markdown2pdf-toc-depth-0:first-child {
+  margin-top: 0;
 }
 
 .markdown2pdf-theme-academic .markdown2pdf-toc h1 {
-  margin: 0 0 2rem;
+  margin: 0 0 1.15rem;
   padding: 0;
   border: 0;
   color: var(--text);
-  font-size: 24pt;
+  font-size: 22pt;
   font-weight: 600;
   letter-spacing: 0.18em;
   text-indent: 0.18em;
@@ -307,7 +324,7 @@ body {
   display: block;
   width: 2.4rem;
   height: 2px;
-  margin: 1rem auto 0;
+  margin: 0.65rem auto 0;
   background: var(--accent);
 }
 
