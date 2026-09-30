@@ -176,17 +176,20 @@ export function renderTableOfContents(
     return '';
   }
 
+  const baseLevel = Math.min(...headings.map((heading) => heading.level));
   const items = headings
     .map((heading) => {
       const title = escapeHtml(heading.title);
-      const linkContent = includePageNumbers
-        ? [
-            `<span class="markdown2pdf-toc-label">${title}</span>`,
-            '<span class="markdown2pdf-toc-leader" aria-hidden="true"></span>',
-            '<span class="markdown2pdf-toc-page-number"></span>',
-          ].join('')
-        : title;
-      return `<li class="markdown2pdf-toc-item markdown2pdf-toc-level-${heading.level}"><a href="#${escapeHtml(heading.anchor)}">${linkContent}</a></li>`;
+      const linkContent = [
+        `<span class="markdown2pdf-toc-label">${title}</span>`,
+        ...(includePageNumbers
+          ? [
+              '<span class="markdown2pdf-toc-leader" aria-hidden="true"></span>',
+              '<span class="markdown2pdf-toc-page-number"></span>',
+            ]
+          : []),
+      ].join('');
+      return `<li class="markdown2pdf-toc-item markdown2pdf-toc-level-${heading.level} markdown2pdf-toc-depth-${heading.level - baseLevel}"><a href="#${escapeHtml(heading.anchor)}">${linkContent}</a></li>`;
     })
     .join('\n');
 

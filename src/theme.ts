@@ -189,44 +189,75 @@ pre code {
 }
 
 .markdown2pdf-toc ol {
+  margin: 0;
   padding-left: 0;
   list-style: none;
 }
 
 .markdown2pdf-toc-item {
-  margin: 0.25rem 0;
-  line-height: 1.5;
+  margin: 0;
+  line-height: 1.55;
+  break-inside: avoid;
+  page-break-inside: avoid;
 }
 
 .markdown2pdf-toc-item > a {
   display: flex;
   align-items: baseline;
+  width: 100%;
+  padding: 0.24rem 0;
   color: inherit;
 }
 
 .markdown2pdf-toc-label {
   min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .markdown2pdf-toc-leader {
+  flex: 1 0 1rem;
   min-width: 1rem;
-  margin: 0 0.45rem;
-  border-bottom: 1px dotted var(--muted);
+  margin: 0 0.65rem;
+  border-bottom: 1px dotted var(--border);
 }
 
 .markdown2pdf-toc-page-number {
   flex: 0 0 4ch;
   text-align: right;
   font-variant-numeric: tabular-nums;
+  font-weight: 500;
 }
 
-.markdown2pdf-toc-level-2 {
-  padding-left: 1.2rem;
+.markdown2pdf-toc-depth-0 {
+  margin-top: 1rem;
+  color: var(--accent);
+  font-size: 1.02em;
+  font-weight: 600;
 }
 
-.markdown2pdf-toc-level-3 {
-  padding-left: 2.4rem;
-  font-size: 0.95em;
+.markdown2pdf-toc-depth-0:first-child {
+  margin-top: 0;
+}
+
+.markdown2pdf-toc-depth-1 {
+  padding-left: 1.3rem;
+}
+
+.markdown2pdf-toc-depth-2 {
+  padding-left: 2.6rem;
+  color: var(--muted);
+  font-size: 0.92em;
+}
+
+.markdown2pdf-toc-item > a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+@media print {
+  .markdown2pdf-toc-item > a {
+    text-decoration: none;
+  }
 }
 
 @page {
@@ -254,6 +285,30 @@ body {
 .markdown2pdf-theme-academic > .markdown2pdf-toc + h1 {
   break-before: auto;
   page-break-before: auto;
+}
+
+.markdown2pdf-theme-academic .markdown2pdf-toc {
+  padding-top: 0.8rem;
+}
+
+.markdown2pdf-theme-academic .markdown2pdf-toc h1 {
+  margin: 0 0 2rem;
+  padding: 0;
+  border: 0;
+  color: var(--text);
+  font-size: 24pt;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-indent: 0.18em;
+}
+
+.markdown2pdf-theme-academic .markdown2pdf-toc h1::after {
+  content: '';
+  display: block;
+  width: 2.4rem;
+  height: 2px;
+  margin: 1rem auto 0;
+  background: var(--accent);
 }
 
 .markdown2pdf-theme-academic pre {
@@ -545,12 +600,12 @@ body {
 }
 
 .markdown2pdf-theme-beamer .markdown2pdf-toc h1 {
-  margin-bottom: 10mm;
+  margin-bottom: 6mm;
 }
 
 .markdown2pdf-theme-beamer .markdown2pdf-toc ol {
-  margin: 0 0 0 7mm;
-  padding: 0 0 0 1mm;
+  margin: 0 2mm;
+  padding: 0;
   border: 0;
   background: transparent;
   columns: 1;
@@ -561,18 +616,35 @@ body {
 }
 
 .markdown2pdf-theme-beamer .markdown2pdf-toc-item {
-  margin: 0 0 0.38mm;
-  line-height: 1.12;
+  margin: 0;
+  line-height: 1.18;
   break-inside: avoid;
 }
 
-.markdown2pdf-theme-beamer .markdown2pdf-toc-level-2 {
-  padding-left: 3.5mm;
+.markdown2pdf-theme-beamer .markdown2pdf-toc-item > a {
+  padding: 0.25mm 0;
 }
 
-.markdown2pdf-theme-beamer .markdown2pdf-toc-level-3 {
-  padding-left: 8mm;
-  font-size: 7.6pt;
+.markdown2pdf-theme-beamer .markdown2pdf-toc-depth-0 {
+  margin-top: 1.4mm;
+  font-size: 8.5pt;
+}
+
+.markdown2pdf-theme-beamer .markdown2pdf-toc-depth-0:first-child {
+  margin-top: 0;
+}
+
+.markdown2pdf-theme-beamer .markdown2pdf-toc-depth-1 {
+  padding-left: 3.8mm;
+}
+
+.markdown2pdf-theme-beamer .markdown2pdf-toc-depth-2 {
+  padding-left: 7.6mm;
+  font-size: 7.5pt;
+}
+
+.markdown2pdf-theme-beamer .markdown2pdf-toc-leader {
+  margin: 0 1.8mm;
 }
 `,
 };

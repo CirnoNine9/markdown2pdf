@@ -451,7 +451,7 @@ describe('markdown rendering', () => {
     expect(html).toContain('class="markdown2pdf-toc"');
     expect(html).toContain('href="#title"');
     expect(html).toContain('href="#%E4%B8%AD%E6%96%87%E6%A0%87%E9%A2%98"');
-    expect(html).toContain('>Formatted title with code and link</a>');
+    expect(html).toContain('>Formatted title with code and link</span>');
     expect(html).not.toContain('>Formatted *title* with `code`');
     expect(html).toContain('href="#title-1"');
     expect(html).not.toContain('href="#ignored"');
@@ -486,6 +486,64 @@ describe('markdown rendering', () => {
     expect(html).toContain('class="markdown2pdf-toc-leader"');
     expect(html).toContain('class="markdown2pdf-toc-page-number"');
   });
+
+  it.skipIf(!process.env.M2PDF_E2E_BROWSER)(
+    'aligns toc page numbers and wraps long labels without overlapping them in both themes',
+    async () => {
+      const browser = await puppeteer.launch({
+        executablePath: process.env.M2PDF_E2E_BROWSER!,
+        headless: true,
+      });
+      try {
+        for (const theme of ['academic', 'beamer'] as const) {
+          const html = await renderMarkdownDocument({
+            sourcePath: 'E:/docs/toc.md',
+            content: `## Short\n\n### ${'LongHeading'.repeat(12)}\n\n## Another section`,
+            config: { ...defaultConfig, theme },
+            includeToc: true,
+            includeTocPageNumbers: true,
+            mathJaxScriptSource: 'data:text/javascript,',
+          });
+          const page = await browser.newPage();
+          await page.setContent(html);
+          await page.addStyleTag({ content: '.markdown2pdf-toc { width: 300px; }' });
+          const rows = await page.evaluate(async () => {
+            await document.fonts.ready;
+            return Array.from(document.querySelectorAll('.markdown2pdf-toc-item > a')).map(link => {
+              const label = link.querySelector('.markdown2pdf-toc-label')!;
+              const leader = link.querySelector('.markdown2pdf-toc-leader')!;
+              const number = link.querySelector('.markdown2pdf-toc-page-number')!;
+              number.textContent = '123';
+              const labelRect = label.getBoundingClientRect();
+              const leaderRect = leader.getBoundingClientRect();
+              const numberRect = number.getBoundingClientRect();
+              return {
+                labelRight: labelRect.right,
+                labelHeight: labelRect.height,
+                lineHeight: Number.parseFloat(getComputedStyle(label).lineHeight),
+                leaderLeft: leaderRect.left,
+                leaderRight: leaderRect.right,
+                numberLeft: numberRect.left,
+                numberRight: numberRect.right,
+                linkRight: link.getBoundingClientRect().right,
+              };
+            });
+          });
+          expect(rows).toHaveLength(3);
+          expect(rows[1].labelHeight).toBeGreaterThan(rows[1].lineHeight * 2);
+          for (const row of rows) {
+            expect(row.labelRight).toBeLessThanOrEqual(row.leaderLeft);
+            expect(row.leaderRight).toBeLessThanOrEqual(row.numberLeft);
+            expect(row.numberRight).toBeCloseTo(row.linkRight, 0);
+            expect(row.numberRight).toBeCloseTo(rows[0].numberRight, 0);
+          }
+          await page.close();
+        }
+      } finally {
+        await browser.close();
+      }
+    }
+  );
 
   it('wraps beamer h2 sections in slide frames', () => {
     const html = wrapBeamerFrames('<h1>Deck</h1><h2>A</h2><p>One</p><h2>B</h2><p>Two</p>');
